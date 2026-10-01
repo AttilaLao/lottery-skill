@@ -1,0 +1,9 @@
+interface:
+  display_name: "Lottery Picker"
+  short_description: "双色球 + 大乐透数据驱动选号工具，自动拉取官方开奖数据生成组合方案"
+  tags:
+    - lottery
+    - 双色球
+    - 大乐透
+    - 选号
+  version: "1.0.0"

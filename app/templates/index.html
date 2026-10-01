@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="选号助手">
+<title>选号助手</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg1:#0a0d14;--bg2:#15181f;--bg3:#0d1015;
+  --card:rgba(28,32,40,.72);
+  --border:rgba(192,200,220,.08);--border-h:rgba(212,175,55,.3);
+  --silver:#c8ccd4;--silver2:#9aa0ac;--silver-glow:rgba(200,204,212,.15);
+  --gold:#d4af37;--gold2:#b8941e;--gold-glow:rgba(212,175,55,.3);
+  --blue:#5b9bd5;--blue2:#2e6da4;--blue-glow:rgba(91,155,213,.3);
+  --green:#3fb950;--text:#e6e8ed;--dim:#7d8590;--dim2:#484f58;
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
+  background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 40%,var(--bg3) 100%);
+  background-attachment:fixed;color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* Hero */
+.hero{position:relative;text-align:center;padding:40px 20px 16px;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50px;left:50%;transform:translateX(-50%);width:280px;height:280px;background:radial-gradient(circle,var(--gold-glow) 0%,transparent 70%);pointer-events:none}
+.hero h1{font-size:26px;font-weight:800;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--silver) 0%,var(--gold) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;position:relative}
+.hero .sub{font-size:11px;color:var(--dim2);margin-top:8px;letter-spacing:1px;position:relative}
+.hero .stats{display:flex;justify-content:center;gap:24px;margin-top:14px;position:relative}
+.hero .stat{text-align:center}
+.hero .stat .v{font-size:18px;font-weight:700;color:var(--gold)}
+.hero .stat .l{font-size:10px;color:var(--dim2);margin-top:2px}
+
+/* Button */
+.gen-wrap{padding:10px 20px 6px}
+.gen-btn{
+  display:block;width:100%;padding:16px;
+  background:linear-gradient(135deg,var(--silver) 0%,var(--silver2) 50%,var(--gold) 100%);
+  color:#0a0d14;border:none;border-radius:16px;font-size:17px;font-weight:800;letter-spacing:1px;
+  cursor:pointer;transition:all .2s ease;box-shadow:0 6px 24px var(--silver-glow);position:relative;overflow:hidden}
+.gen-btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);transition:left .5s}
+.gen-btn:active{transform:scale(.96);box-shadow:0 3px 12px var(--silver-glow)}
+.gen-btn:disabled{opacity:.4;cursor:default}
+.export-btn{display:none;width:100%;padding:12px;margin-top:8px;background:rgba(28,32,40,.72);color:var(--silver);border:1px solid var(--border-h);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s ease}
+.export-btn:active{transform:scale(.98)}
+.export-btn:hover{border-color:var(--gold)}
+.export-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:100;justify-content:center;align-items:center}
+.export-panel{background:var(--bg2);border:1px solid var(--border-h);border-radius:16px;padding:24px;max-width:380px;width:90%;max-height:80vh;overflow-y:auto}
+.export-panel .ep-header{font-size:16px;font-weight:800;color:var(--gold);text-align:center;margin-bottom:4px}
+.export-panel .ep-date{font-size:11px;color:var(--dim2);text-align:center;margin-bottom:16px}
+.export-panel .ep-section{font-size:13px;font-weight:700;color:var(--silver);margin:12px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.export-panel .ep-row{font-size:14px;color:var(--text);padding:4px 0;font-family:monospace;letter-spacing:1px}
+.export-panel .ep-row .ep-label{color:var(--dim2);font-size:11px;margin-right:8px}
+.export-panel .ep-close{display:block;width:100%;padding:12px;margin-top:16px;background:linear-gradient(135deg,var(--silver),var(--gold));color:#0a0d14;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer}
+.gen-btn:hover::before{left:100%}
+
+/* Status */
+.status{text-align:center;font-size:12px;color:var(--dim);margin:10px 0 2px;min-height:16px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Tabs */
+.tabs{display:flex;max-width:360px;margin:14px auto;background:rgba(0,0,0,.3);border-radius:14px;padding:5px;border:1px solid var(--border)}
+.tab{flex:1;text-align:center;padding:11px;font-size:14px;font-weight:600;color:var(--dim);border-radius:10px;cursor:pointer;transition:all .25s ease}
+.tab.active{background:linear-gradient(135deg,var(--silver),var(--silver2));color:#0a0d14;box-shadow:0 3px 10px var(--silver-glow)}
+
+/* Sections */
+.section{display:none;padding:0 16px}
+.section.active{display:block;animation:fadeUp .4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Signal Card */
+.sig-card{
+  background:var(--card);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-radius:16px;padding:18px;margin-bottom:12px;border:1px solid var(--border);
+}
+.sig-card h3{font-size:12px;font-weight:700;color:var(--gold);margin-bottom:12px;letter-spacing:1px;
+  display:flex;align-items:center;gap:6px}
+.sig-card h3::before{content:'';width:3px;height:12px;background:var(--gold);border-radius:2px}
+.sig-issue{font-size:10px;color:var(--dim2);margin-left:auto;font-weight:400}
+.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.sig-item{background:rgba(0,0,0,.2);border-radius:10px;padding:8px 10px}
+.sig-label{font-size:10px;color:var(--dim2);margin-bottom:4px}
+.sig-nums{display:flex;flex-wrap:wrap;gap:3px}
+.tag{display:inline-block;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600}
+.tag-hot{background:rgba(212,175,55,.15);color:var(--gold)}
+.tag-due{background:rgba(91,155,213,.15);color:var(--blue)}
+.tag-cool{background:rgba(192,200,220,.1);color:var(--silver)}
+.tag-neutral{background:rgba(255,255,255,.06);color:var(--dim)}
+.pairs{font-size:11px;color:var(--dim);margin-top:6px;line-height:1.6}
+.pairs .pp{color:var(--text);margin-right:6px}
+
+/* Filter Tags */
+.filters{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.ftag{font-size:10px;padding:3px 9px;border-radius:6px;font-weight:500;
+  background:rgba(63,185,80,.08);color:var(--green);border:1px solid rgba(63,185,80,.15)}
+
+/* Combo Cards */
+.combo{
+  background:var(--card);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-radius:16px;padding:16px;margin-bottom:12px;border:1px solid var(--border);
+  transition:all .25s ease;position:relative;overflow:hidden}
+.combo::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--silver),var(--gold),transparent)}
+.combo:active{border-color:var(--border-h);transform:scale(.98)}
+.combo-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.combo-name{font-size:13px;font-weight:700;color:var(--gold)}
+.combo-idx{font-size:10px;color:var(--dim2);background:rgba(255,255,255,.05);padding:2px 8px;border-radius:6px}
+
+/* Balls */
+.balls{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px;align-items:center}
+.ball{
+  width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;flex-shrink:0;position:relative;transition:transform .2s}
+.ball:active{transform:scale(1.1)}
+.ball-silver{
+  background:radial-gradient(circle at 30% 30%,#e8ebf0 0%,var(--silver) 40%,var(--silver2) 100%);
+  color:#1a1d24;box-shadow:0 3px 10px var(--silver-glow),inset 0 1px 2px rgba(255,255,255,.4)}
+.ball-gold{
+  background:radial-gradient(circle at 30% 30%,#f0d060 0%,var(--gold) 40%,var(--gold2) 100%);
+  color:#1a1d24;box-shadow:0 3px 10px var(--gold-glow),inset 0 1px 2px rgba(255,255,255,.3)}
+.ball-blue{
+  background:radial-gradient(circle at 30% 30%,#7ab5e8 0%,var(--blue) 40%,var(--blue2) 100%);
+  color:#fff;box-shadow:0 3px 10px var(--blue-glow),inset 0 1px 2px rgba(255,255,255,.3)}
+.sep{color:var(--dim2);font-size:16px;margin:0 2px}
+
+/* Meta */
+.meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.badge{font-size:10px;padding:3px 8px;border-radius:5px;font-weight:600}
+.badge-sum{background:rgba(91,155,213,.1);color:var(--blue)}
+.badge-oe{background:rgba(255,255,255,.06);color:var(--dim)}
+.badge-ok{background:rgba(63,185,80,.1);color:var(--green)}
+.badge-no{background:rgba(255,255,255,.04);color:var(--dim2)}
+.logic{font-size:11px;color:var(--dim);margin-top:6px;line-height:1.5}
+
+/* Footer */
+.footer{text-align:center;padding:24px 16px 32px}
+.footer .warn{font-size:11px;color:var(--gold2);font-weight:600;margin-bottom:4px}
+.footer .note{font-size:10px;color:var(--dim2);line-height:1.6}
+
+/* Empty State */
+.empty{text-align:center;padding:60px 20px}
+.empty .icon{font-size:48px;margin-bottom:12px;opacity:.3}
+.empty .text{font-size:13px;color:var(--dim2);line-height:1.8}
+.empty .filters-hint{font-size:10px;color:var(--dim2);margin-top:16px;line-height:1.6}
+.recent{background:var(--card);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.recent h3{font-size:13px;font-weight:700;color:var(--silver);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.recent h3::before{content:'📢';font-size:14px}
+.next-draw{font-size:11px;color:var(--gold);margin-bottom:8px;font-weight:600}
+.recent-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.recent-row:last-child{border-bottom:none}
+.recent-label{font-size:10px;color:var(--dim2);width:44px;flex-shrink:0;text-align:center}
+.recent-issue{font-size:11px;color:var(--dim);min-width:70px;flex-shrink:0}
+.recent-balls{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+.recent-ball{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.recent-ball.red{background:linear-gradient(135deg,#c8ccd4,#9aa0ac);color:#0a0d14}
+.recent-ball.blue{background:linear-gradient(135deg,#5b9bd5,#2e6da4);color:#fff}
+.recent-ball.gold{background:linear-gradient(135deg,#d4af37,#b8941e);color:#0a0d14}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>选号助手</h1>
+  <div class="sub">DATA DRIVEN LOTTERY ANALYSIS</div>
+  <div class="stats" id="heroStats">
+    <div class="stat"><div class="v">500+</div><div class="l">期历史数据</div></div>
+    <div class="stat"><div class="v">5</div><div class="l">套组合方案</div></div>
+    <div class="stat"><div class="v">8</div><div class="l">项结构过滤</div></div>
+  </div>
+</div>
+
+<div class="gen-wrap">
+ <button class="gen-btn" id="genBtn" onclick="generate()">生成最新方案</button>
+</div>
+<div class="gen-wrap" style="padding-top:0">
+  <button class="export-btn" id="exportBtn" onclick="exportNumbers()">导出号码清单</button>
+</div>
+<div class="status" id="status"></div>
+
+<div class="tabs" id="tabs" style="display:none">
+  <div class="tab active" onclick="switchTab('ssq')">双色球</div>
+  <div class="tab" onclick="switchTab('dlt')">大乐透</div>
+</div>
+
+<div class="section active" id="ssqSection">
+  <div class="empty">
+    <div class="icon">🎰</div>
+    <div class="text">点击上方按钮生成方案<br>双色球 红球33选6 + 蓝球16选1</div>
+    <div class="filters-hint">过滤条件: 和值80-120 · 奇偶3:3/4:2/2:4 · 有连号 · 三区覆盖</div>
+  </div>
+</div>
+
+<div class="section" id="dltSection">
+  <div class="empty">
+    <div class="icon">🎰</div>
+    <div class="text">点击上方按钮生成方案<br>大乐透 前区35选5 + 后区12选2</div>
+    <div class="filters-hint">过滤条件: 和值60-110 · 奇偶3:2/2:3 · 3区以上覆盖</div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="warn">⚠ 彩票长期期望为负，请理性投注</div>
+  <div class="note">数据仅供研究参考，不构成投注建议<br>基于官方历史开奖数据统计分析</div>
+</div>
+
+<script>
+let currentData=null;
+
+function generate(){
+  const btn=document.getElementById('genBtn');
+  const status=document.getElementById('status');
+  btn.disabled=true;
+  btn.textContent='生成中...';
+  status.innerHTML='<span class="spinner"></span>正在拉取最新开奖数据...';
+  document.getElementById('tabs').style.display='none';
+  document.getElementById('ssqSection').innerHTML='<div class="empty"><div class="icon">🎰</div><div class="text">正在分析双色球数据...</div></div>';
+  document.getElementById('dltSection').innerHTML='<div class="empty"><div class="icon">🎰</div><div class="text">正在分析大乐透数据...</div></div>';
+  const apiBase = location.pathname.startsWith('/lucky') ? '/lucky/api/generate' : '/api/generate';
+fetch(apiBase)
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.error){status.innerHTML='<span style="color:var(--gold2)">'+data.error+'</span>';restoreEmpty();return;}
+      currentData=data;
+      document.getElementById('tabs').style.display='flex';
+      status.innerHTML='✅ 生成完成 · '+data.generated_at;
+     renderSSQ(data.ssq);
+     renderDLT(data.dlt);
+     document.getElementById('exportBtn').style.display='block';
+   })
+   .catch(e=>{status.innerHTML='<span style="color:var(--gold2)">网络错误: '+e+'</span>';restoreEmpty();})
+   .finally(()=>{btn.disabled=false;btn.textContent='生成最新方案';});
+}
+
+function restoreEmpty(){
+  document.getElementById('ssqSection').innerHTML='<div class="empty"><div class="icon">🎰</div><div class="text">点击上方按钮生成方案</div></div>';
+  document.getElementById('dltSection').innerHTML='<div class="empty"><div class="icon">🎰</div><div class="text">点击上方按钮生成方案</div></div>';
+  document.getElementById('exportBtn').style.display='none';
+}
+
+function exportNumbers(){
+  if(!currentData) return;
+  const d=currentData;
+  let h='<div class="ep-header">选号清单</div>';
+  h+='<div class="ep-date">'+d.generated_at+'</div>';
+  h+='<div class="ep-section">双色球</div>';
+  d.ssq.combos.forEach((c,i)=>{
+    const reds=c.reds.map(n=>String(n).padStart(2,'0')).join(' ');
+    h+='<div class="ep-row"><span class="ep-label">' +(i+1)+'</span>'+reds+'  +  '+String(c.blue).padStart(2,'0')+'</div>';
+  });
+  h+='<div class="ep-section">大乐透</div>';
+  d.dlt.combos.forEach((c,i)=>{
+    const fronts=c.fronts.map(n=>String(n).padStart(2,'0')).join(' ');
+    const backs=c.backs.map(n=>String(n).padStart(2,'0')).join(' ');
+    h+='<div class="ep-row"><span class="ep-label">'+(i+1)+'</span>'+fronts+'  +  '+backs+'</div>';
+  });
+  h+='<button class="ep-close" onclick="document.getElementById(\'exportOverlay\').style.display=\'none\'">关闭</button>';
+  document.getElementById('exportPanel').innerHTML=h;
+  document.getElementById('exportOverlay').style.display='flex';
+}
+
+function switchTab(game){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  if(game==='ssq'){document.querySelectorAll('.tab')[0].classList.add('active');document.getElementById('ssqSection').classList.add('active');}
+  else{document.querySelectorAll('.tab')[1].classList.add('active');document.getElementById('dltSection').classList.add('active');}
+}
+
+function ball(n,type){
+  return '<div class="ball ball-'+type+'">'+String(n).padStart(2,'0')+'</div>';
+}
+
+function renderSSQ(d){
+  const rd=currentData.recent_draws.ssq;
+  const labels=['本期','前期','前前期'];
+  let rh='<div class="recent"><h3>最近三期开奖</h3>';
+  const nd=currentData.next_draw.ssq;
+  rh+='<div class="next-draw">⏰ 下期开奖: '+nd+'</div>';
+  rd.slice().reverse().forEach((r,i)=>{
+    const reds=r.red.map(n=>'<div class="recent-ball red">'+String(n).padStart(2,'0')+'</div>').join('');
+    rh+='<div class="recent-row"><div class="recent-label">'+labels[i]+'</div><div class="recent-issue">'+r.issue+'</div><div class="recent-balls">'+reds+'<div class="recent-ball blue">'+String(r.blue).padStart(2,'0')+'</div></div></div>';
+  });
+  rh+='</div>';
+  const s=d.signals;
+  const pairs=s.top_pairs.map(p=>'<span class="pp">'+p.pair.replace(',','-')+'<span style="color:var(--dim2)">('+p.count+')</span></span>').join('');
+  const hotReds=s.hot_reds.slice(0,8).map(n=>'<span class="tag tag-hot">'+n+'</span>').join('');
+  const overdue=s.overdue_reds.slice(0,6).map(n=>'<span class="tag tag-due">'+n+'</span>').join('');
+  const hotBlues=s.hot_blues.map(n=>'<span class="tag tag-neutral">'+n+'</span>').join('');
+  const dueBlues=s.overdue_blues.map(n=>'<span class="tag tag-due">'+n+'</span>').join('');
+  let html=rh+'<div class="sig-card">';
+  html+='<h3>核心信号 <span class="sig-issue">截至 '+d.latest_issue+' 期 · '+d.total_draws+'期数据</span></h3>';
+  html+='<div class="sig-grid">';
+  html+='<div class="sig-item"><div class="sig-label">🔥 热号</div><div class="sig-nums">'+hotReds+'</div></div>';
+  html+='<div class="sig-item"><div class="sig-label">⏰ 该出</div><div class="sig-nums">'+overdue+'</div></div>';
+  html+='<div class="sig-item"><div class="sig-label">🔵 热蓝球</div><div class="sig-nums">'+hotBlues+'</div></div>';
+  html+='<div class="sig-item"><div class="sig-label">⏰ 该出蓝</div><div class="sig-nums">'+dueBlues+'</div></div>';
+  html+='</div>';
+  html+='<div class="pairs">'+pairs+'</div>';
+  html+='<div class="filters"><span class="ftag">✓ 和值80-120</span><span class="ftag">✓ 奇偶3:3/4:2/2:4</span><span class="ftag">✓ 有连号</span><span class="ftag">✓ 三区覆盖</span></div>';
+  html+='</div>';
+  d.combos.forEach((c,i)=>{
+    const reds=c.reds.map(n=>ball(n,'silver')).join('');
+    const sum=c.reds.reduce((a,b)=>a+b,0);
+    const odd=c.reds.filter(n=>n%2===1).length;
+    const sorted=[...c.reds].sort((a,b)=>a-b);
+    const hasConsec=sorted.some((n,idx)=>idx>0&&n===sorted[idx-1]+1);
+    html+='<div class="combo">';
+    html+='<div class="combo-head"><span class="combo-name">'+c.name+'</span><span class="combo-idx">方案 '+(i+1)+'/5</span></div>';
+    html+='<div class="balls">'+reds+'<span class="sep">+</span>'+ball(c.blue,'blue')+'</div>';
+    html+='<div class="meta-row"><span class="badge badge-sum">和值 '+sum+'</span><span class="badge badge-oe">奇偶 '+odd+':'+(6-odd)+'</span>'+(hasConsec?'<span class="badge badge-ok">✓ 连号</span>':'<span class="badge badge-no">无连号</span>')+'</div>';
+    html+='<div class="logic">'+c.logic+'</div>';
+    html+='</div>';
+  });
+  document.getElementById('ssqSection').innerHTML=html;
+}
+
+function renderDLT(d){
+  const rd=currentData.recent_draws.dlt;
+  const labels=['本期','前期','前前期'];
+ let rh='<div class="recent"><h3>最近三期开奖</h3>';
+ const nd=currentData.next_draw.dlt;
+ rh+='<div class="next-draw">⏰ 下期开奖: '+nd+'</div>';
+ rd.slice().reverse().forEach((r,i)=>{
+    const fronts=r.front.map(n=>'<div class="recent-ball red">'+String(n).padStart(2,'0')+'</div>').join('');
+   const backs=r.back.map(n=>'<div class="recent-ball gold">'+String(n).padStart(2,'0')+'</div>').join('');
+  rh+='<div class="recent-row"><div class="recent-label">'+labels[i]+'</div><div class="recent-issue">'+r.issue+'</div><div class="recent-balls">'+fronts+backs+'</div></div>';
+  });
+  rh+='</div>';
+  const s=d.signals;
+  const pairs=s.top_pairs.map(p=>'<span class="pp">'+p.pair.replace(',','-')+'<span style="color:var(--dim2)">('+p.count+')</span></span>').join('');
+  const hotFronts=s.hot_fronts.slice(0,8).map(n=>'<span class="tag tag-hot">'+n+'</span>').join('');
+  const overdue=s.overdue_fronts.slice(0,6).map(n=>'<span class="tag tag-due">'+n+'</span>').join('');
+ const hotBacks=s.hot_backs.map(n=>'<span class="tag tag-neutral">'+n+'</span>').join('');
+ const dueBacks=s.overdue_backs.map(n=>'<span class="tag tag-due">'+n+'</span>').join('');
+ let html=rh+'<div class="sig-card">';
+  html+='<h3>核心信号 <span class="sig-issue">截至 '+d.latest_issue+' 期 · '+d.total_draws+'期数据</span></h3>';
+  html+='<div class="sig-grid">';
+  html+='<div class="sig-item"><div class="sig-label">🔥 热号</div><div class="sig-nums">'+hotFronts+'</div></div>';
+  html+='<div class="sig-item"><div class="sig-label">⏰ 该出</div><div class="sig-nums">'+overdue+'</div></div>';
+  html+='<div class="sig-item"><div class="sig-label">🟡 热后区</div><div class="sig-nums">'+hotBacks+'</div></div>';
+  html+='<div class="sig-item"><div class="sig-label">⏰ 该出后</div><div class="sig-nums">'+dueBacks+'</div></div>';
+  html+='</div>';
+  html+='<div class="pairs">'+pairs+'</div>';
+  html+='<div class="filters"><span class="ftag">✓ 和值60-110</span><span class="ftag">✓ 奇偶3:2/2:3</span><span class="ftag">✓ 3区以上</span></div>';
+  html+='</div>';
+  d.combos.forEach((c,i)=>{
+    const fronts=c.fronts.map(n=>ball(n,'silver')).join('');
+    const backs=c.backs.map(n=>ball(n,'gold')).join('');
+    const sum=c.fronts.reduce((a,b)=>a+b,0);
+    const odd=c.fronts.filter(n=>n%2===1).length;
+    html+='<div class="combo">';
+    html+='<div class="combo-head"><span class="combo-name">'+c.name+'</span><span class="combo-idx">方案 '+(i+1)+'/5</span></div>';
+    html+='<div class="balls">'+fronts+'<span class="sep">+</span>'+backs+'</div>';
+    html+='<div class="meta-row"><span class="badge badge-sum">和值 '+sum+'</span><span class="badge badge-oe">奇偶 '+odd+':'+(5-odd)+'</span></div>';
+    html+='<div class="logic">'+c.logic+'</div>';
+    html+='</div>';
+  });
+  document.getElementById('dltSection').innerHTML=html;
+}
+</script>
+<div class="export-overlay" id="exportOverlay" onclick="if(event.target===this)this.style.display='none'">
+<div class="export-panel" id="exportPanel"></div>
+</div>
+</body>
+</html>
