@@ -195,10 +195,15 @@ def get_ssq_signals(draws):
                 pair_counts[p] += 1
     expected_pair = total * comb(6, 2) / comb(33, 2)
     hot_pairs = [(p, c) for p, c in pair_counts.most_common(20) if c > expected_pair * 1.3]
+    long_freq = Counter()
+    for d in draws:
+        for n in d["red"]:
+            long_freq[n] += 1
     return {
         "hot_reds": hot_reds, "cold_reds": cold_reds, "hot_blues": hot_blues,
         "overdue_reds": overdue_reds, "overdue_blues": overdue_blues,
         "hot_pairs": hot_pairs,
+        "long_freq": long_freq,
         "latest_issue": draws[-1]["issue"] if draws else "",
         "latest_date": draws[-1]["draw_date"] if draws else "",
     }
@@ -236,10 +241,15 @@ def get_dlt_signals(draws):
                 pair_counts[p] += 1
     expected_pair = total * comb(5, 2) / comb(35, 2)
     hot_pairs = [(p, c) for p, c in pair_counts.most_common(20) if c > expected_pair * 1.3]
+    long_freq = Counter()
+    for d in draws:
+        for n in d["front"]:
+            long_freq[n] += 1
     return {
         "hot_fronts": hot_fronts, "cold_fronts": cold_fronts, "hot_backs": hot_backs,
         "overdue_fronts": overdue_fronts, "overdue_backs": overdue_backs,
         "hot_pairs": hot_pairs,
+        "long_freq": long_freq,
         "latest_issue": draws[-1]["issue"] if draws else "",
         "latest_date": draws[-1]["draw_date"] if draws else "",
     }
@@ -261,12 +271,16 @@ def build_ssq_combos_filtered(sig, rng):
     combos = []
     max_attempts = 100
 
-    def try_build(base_reds, blue, name, logic, require_consec=True):
+    def try_build(base_reds, blue, name, logic, require_consec=True, weighted=False):
         for _ in range(max_attempts):
-            # Add some randomness to base pool
             pool = list(set(base_reds))
-            rng.shuffle(pool)
-            reds = sorted(pool[:6])
+            if weighted and sig.get("long_freq"):
+                freqs = [sig["long_freq"].get(n, 0) + 1 for n in pool]
+                picks = list(dict.fromkeys(rng.choices(pool, weights=freqs, k=8)))
+                reds = sorted(picks[:6])
+            else:
+                rng.shuffle(pool)
+                reds = sorted(pool[:6])
             if len(reds) < 6:
                 reds = fill_to_n(reds, 6, sig["hot_reds"])
             ok, reason = validate_ssq(reds, require_consec)
@@ -311,7 +325,7 @@ def build_ssq_combos_filtered(sig, rng):
     z3 = [n for n in sig["overdue_reds"] if n >= 23][:3]
     pool4 = z1 + z2 + z3 + sig["hot_reds"][:5]
     blue4 = sig["overdue_blues"][1] if len(sig["overdue_blues"]) > 1 else sig["overdue_blues"][0]
-    try_build(pool4, blue4, "三区遗漏平衡", f"每区遗漏最大 + 该出蓝球{blue4:02d}")
+    try_build(pool4, blue4, "三区遗漏平衡", f"每区遗漏最大·长期频率加权 + 该出蓝球{blue4:02d}", weighted=True)
 
     # 5: Pair chain
     pf = Counter()
@@ -330,11 +344,16 @@ def build_dlt_combos_filtered(sig, rng):
     combos = []
     max_attempts = 100
 
-    def try_build(base_fronts, backs, name, logic, require_consec=False):
+    def try_build(base_fronts, backs, name, logic, require_consec=False, weighted=False):
         for _ in range(max_attempts):
             pool = list(set(base_fronts))
-            rng.shuffle(pool)
-            fronts = sorted(pool[:5])
+            if weighted and sig.get("long_freq"):
+                freqs = [sig["long_freq"].get(n, 0) + 1 for n in pool]
+                picks = list(dict.fromkeys(rng.choices(pool, weights=freqs, k=7)))
+                fronts = sorted(picks[:5])
+            else:
+                rng.shuffle(pool)
+                fronts = sorted(pool[:5])
             if len(fronts) < 5:
                 fronts = fill_to_n(fronts, 5, sig["hot_fronts"])
             ok, reason = validate_dlt(fronts, require_consec)
@@ -378,7 +397,7 @@ def build_dlt_combos_filtered(sig, rng):
     z5 = [n for n in sig["overdue_fronts"] if n >= 29][:2]
     pool4 = z1 + z2 + z3 + z4 + z5 + sig["hot_fronts"][:5]
     backs4 = sorted([sig["overdue_backs"][0], sig["hot_backs"][0]])
-    try_build(pool4, backs4, "五区遗漏平衡", f"五区遗漏最大 + 遗漏后区{backs4[0]:02d}+热后区{backs4[1]:02d}")
+    try_build(pool4, backs4, "五区遗漏平衡", f"五区遗漏最大·长期频率加权 + 遗漏后区{backs4[0]:02d}+热后区{backs4[1]:02d}", weighted=True)
 
     # 5: Pair chain
     pf = Counter()
