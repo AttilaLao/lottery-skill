@@ -17,6 +17,7 @@ from fresh_pick_v2 import (
 )
 import fresh_pick_v2
 fresh_pick_v2.PYPDF2_AVAILABLE = False  # skip per-draw PDF download; ball_set not used by signals
+from holidays import is_holiday
 
 # SSQ draws on Tue(1)/Thu(3)/Sun(6), DLT draws on Mon(0)/Wed(2)/Sat(5)
 SSQ_DAYS = {1, 3, 6}
@@ -24,10 +25,11 @@ DLT_DAYS = {0, 2, 5}
 
 def next_draw_date(latest_date_str, draw_days):
     latest = datetime.strptime(latest_date_str, "%Y-%m-%d")
-    for delta in range(1, 9):
+    for delta in range(1, 30):
         nxt = latest + timedelta(days=delta)
-        if nxt.weekday() in draw_days:
-            return nxt.strftime("%Y-%m-%d")
+        ds = nxt.strftime("%Y-%m-%d")
+        if nxt.weekday() in draw_days and not is_holiday(ds):
+            return ds
     return ""
 
 
